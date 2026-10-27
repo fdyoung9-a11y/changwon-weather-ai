@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import weather, chat
+from routes import weather, chat, conversations   # ✅ 5번줄
 import firebase_admin
 from firebase_admin import credentials
 from dotenv import load_dotenv
@@ -31,3 +31,4 @@ firebase_admin.initialize_app(cred)
 # 라우터 등록
 app.include_router(weather.router)
 app.include_router(chat.router)
+app.include_router(conversations.router, prefix="/conversations")  # ✅ 36번줄

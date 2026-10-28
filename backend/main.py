@@ -1,47 +1,34 @@
 import os
-from fastapi import APIRouter
-from pydantic import BaseModel
-from openai import OpenAI
+from pathlib import Path
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from routes import weather, chat, conversations
+import firebase_admin
+from firebase_admin import credentials
 from dotenv import load_dotenv
 
-load_dotenv()
+# .env 로드
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-router = APIRouter()
+app = FastAPI()
 
-client = OpenAI(
-    api_key=os.getenv("GEMINI_API_KEY"),
-    base_url="https://copa.codyssey.kr/v1"
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-class ChatRequest(BaseModel):
-    message: str
-    conversation_id: str = None
+# Firebase 초기화
+key_path = os.getenv("FIREBASE_KEY_PATH")
+print(f"[DEBUG] FIREBASE_KEY_PATH = {key_path}")
 
-class ChatResponse(BaseModel):
-    response: str
-    conversation_id: str = None
+cred = credentials.Certificate(key_path)
+firebase_admin.initialize_app(cred)
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    response = client.chat.completions.create(
-        model="gemini-3-flash",
-        messages=[
-            {"role": "system", "content": "당신은 창원 날씨 전문 AI 어시스턴트입니다."},
-            {"role": "user", "content": request.message}
-        ]
-    )
-    ai_message = response.choices[0].message.content
-    return ChatResponse(
-        response=ai_message,
-        conversation_id=request.conversation_id
-    )
-
-def get_ai_response(message: str) -> str:
-    response = client.chat.completions.create(
-        model="gemini-3-flash",
-        messages=[
-            {"role": "system", "content": "당신은 창원 날씨 전문 AI 어시스턴트입니다."},
-            {"role": "user", "content": message}
-        ]
-    )
-    return response.choices[0].message.content
+# 라우터 등록
+app.include_router(weather.router)
+app.include_router(chat.router)
+app.include_router(conversations.router, prefix="/conversations")

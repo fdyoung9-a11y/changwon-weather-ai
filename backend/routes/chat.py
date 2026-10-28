@@ -1,9 +1,11 @@
 import os
+import uuid                                      # ✨ 새로 추가: 대화방 이름표 만들기용
 from fastapi import APIRouter
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
-from routes.weather import get_weather_summary   # ✨ 새로 추가: 요약 함수 불러오기
+from routes.weather import get_weather_summary
+from routes.conversations import create_conversation, ConversationCreate   # ✨ 새로 추가: 저장 함수 불러오기
 
 load_dotenv()
 
@@ -23,10 +25,10 @@ class ChatResponse(BaseModel):
     conversation_id: str | None = None
 
 
-# ✨ 새로 추가: 요약 데이터를 넣어서 시스템 프롬프트 만들기
+# 요약 데이터를 넣어서 시스템 프롬프트 만들기
 def build_system_prompt() -> str:
     try:
-        s = get_weather_summary()   # 요약 API와 같은 계산 결과를 받아와요
+        s = get_weather_summary()
         m = s["metrics"]
         return (
             "당신은 창원 날씨 데이터 분석 비서입니다.\n\n"
@@ -41,30 +43,43 @@ def build_system_prompt() -> str:
             "데이터에 없는 내용은 추측하지 말고 모른다고 답하세요."
         )
     except Exception:
-        # 요약을 못 불러와도 챗봇은 멈추지 않도록 기본 문장을 사용해요
         return "당신은 창원 날씨 전문 AI 어시스턴트입니다. 현재 데이터 요약을 불러오지 못했습니다."
 
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
+    # ✨ 대화방 이름표: 보내온 게 있으면 그대로, 없으면 새로 만들기
+    session_id = request.conversation_id or str(uuid.uuid4())
+
     response = client.chat.completions.create(
         model="gemini-3-flash",
         messages=[
-            {"role": "system", "content": build_system_prompt()},   # ✨ 바뀐 부분
+            {"role": "system", "content": build_system_prompt()},
             {"role": "user", "content": request.message}
         ]
     )
     ai_message = response.choices[0].message.content
+
+    # ✨ Firestore에 자동 저장 (실패해도 답변은 돌려줌)
+    try:
+        create_conversation(ConversationCreate(
+            user_message=request.message,
+            bot_response=ai_message,
+            session_id=session_id
+        ))
+    except Exception as e:
+        print(f"[WARN] 대화 저장 실패: {e}")
+
     return ChatResponse(
         response=ai_message,
-        conversation_id=request.conversation_id
+        conversation_id=session_id      # ✨ 대화방 이름표를 응답에 담아 보내기
     )
 
 def get_ai_response(message: str) -> str:
     response = client.chat.completions.create(
         model="gemini-3-flash",
         messages=[
-            {"role": "system", "content": build_system_prompt()},   # ✨ 바뀐 부분
+            {"role": "system", "content": build_system_prompt()},
             {"role": "user", "content": message}
         ]
     )

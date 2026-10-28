@@ -243,3 +243,12 @@ body {
         height: auto;
     }
 }
+
+/* ✨ 요약 카드: 진한 배경으로 흰 글씨가 잘 보이게 */
+.card.weather-card {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+    color: #fff;
+}
+.card.weather-card .detail-item {
+    background: rgba(255, 255, 255, 0.15);
+}

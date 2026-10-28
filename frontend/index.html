@@ -8,8 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome 아이콘 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- 커스텀 CSS -->
-    <link href="css/style.css" rel="stylesheet">
+    <!-- 커스텀 CSS (✨ 경로 수정: static/ 추가) -->
+    <link href="static/css/style.css" rel="stylesheet">
 </head>
 <body>
 
@@ -25,69 +25,71 @@
 
     <div class="container mt-4">
 
-        <!-- 현재 날씨 카드 -->
+        <!-- ✨ 데이터 요약 카드 (현재 날씨 카드 자리) -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="weather-card card p-4">
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <h2 class="location">
-                                <i class="fas fa-map-marker-alt"></i> 창원시
+                                <i class="fas fa-map-marker-alt"></i> 창원시 기온 데이터 요약
                             </h2>
-                            <div class="temperature" id="temperature">--°C</div>
-                            <div class="weather-desc" id="weather-desc">날씨 불러오는 중...</div>
+                            <div class="temperature" id="sum-avg">--°C</div>
+                            <div class="weather-desc">전체 기간 평균기온</div>
+                            <div class="weather-desc mt-2" id="sum-trend">추세 불러오는 중...</div>
                         </div>
                         <div class="col-md-6">
                             <div class="weather-details">
                                 <div class="detail-item">
-                                    <i class="fas fa-tint"></i>
-                                    <span>습도</span>
-                                    <strong id="humidity">--%</strong>
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>데이터 기간</span>
+                                    <strong id="sum-period">--</strong>
                                 </div>
                                 <div class="detail-item">
-                                    <i class="fas fa-wind"></i>
-                                    <span>풍속</span>
-                                    <strong id="wind-speed">-- m/s</strong>
+                                    <i class="fas fa-database"></i>
+                                    <span>데이터 개수</span>
+                                    <strong id="sum-count">--</strong>
                                 </div>
                                 <div class="detail-item">
-                                    <i class="fas fa-thermometer-half"></i>
-                                    <span>체감온도</span>
-                                    <strong id="feels-like">--°C</strong>
+                                    <i class="fas fa-temperature-high"></i>
+                                    <span>최고기온</span>
+                                    <strong id="sum-max">--°C</strong>
                                 </div>
                                 <div class="detail-item">
-                                    <i class="fas fa-eye"></i>
-                                    <span>가시거리</span>
-                                    <strong id="visibility">-- km</strong>
+                                    <i class="fas fa-temperature-low"></i>
+                                    <span>최저기온</span>
+                                    <strong id="sum-min">--°C</strong>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <button class="btn btn-refresh mt-3" onclick="loadWeather()">
-                        <i class="fas fa-sync-alt"></i> 날씨 새로고침
+                    <button class="btn btn-refresh mt-3" onclick="loadSummary()">
+                        <i class="fas fa-sync-alt"></i> 요약 새로고침
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- AI 채팅 + 날씨 기록 -->
+        <!-- AI 채팅 + 대화 기록 -->
         <div class="row">
 
             <!-- AI 채팅 -->
             <div class="col-md-7 mb-4">
                 <div class="card chat-card p-3">
-                    <h5 class="card-title">
-                        <i class="fas fa-robot"></i> AI 날씨 어시스턴트
-                    </h5>
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="message bot-message">
-                            <i class="fas fa-robot"></i>
-                            안녕하세요! 창원 날씨 AI입니다. 날씨에 대해 무엇이든 물어보세요! 😊
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-robot"></i> AI 날씨 어시스턴트
+                        </h5>
+                        <!-- ✨ 새 대화 버튼 -->
+                        <button class="btn btn-sm btn-outline-secondary" onclick="newChat()">
+                            <i class="fas fa-plus"></i> 새 대화
+                        </button>
                     </div>
+                    <div class="chat-messages mt-3" id="chat-messages"></div>
                     <div class="chat-input mt-3">
                         <div class="input-group">
                             <input type="text" class="form-control" id="chat-input"
-                                placeholder="날씨에 대해 질문하세요..." 
+                                placeholder="예: 최근 기온 추세는 어때?"
                                 onkeypress="handleEnter(event)">
                             <button class="btn btn-send" onclick="sendMessage()">
                                 <i class="fas fa-paper-plane"></i>
@@ -97,29 +99,61 @@
                 </div>
             </div>
 
-            <!-- 날씨 기록 -->
+            <!-- ✨ 대화 기록 -->
             <div class="col-md-5 mb-4">
                 <div class="card p-3">
                     <h5 class="card-title">
-                        <i class="fas fa-history"></i> 날씨 기록
+                        <i class="fas fa-history"></i> 대화 기록
                     </h5>
-                    <div id="weather-history">
-                        <div class="text-center text-muted py-3">
-                            <i class="fas fa-spinner fa-spin"></i> 불러오는 중...
-                        </div>
+                    <div id="conv-list" style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-center text-muted py-3">불러오는 중...</div>
                     </div>
-                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadHistory()">
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadConversations()">
                         <i class="fas fa-sync-alt"></i> 새로고침
                     </button>
                 </div>
             </div>
 
         </div>
+
+        <!-- ✨ 데이터 관리 -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card p-3">
+                    <h5 class="card-title">
+                        <i class="fas fa-table"></i> 데이터 관리
+                    </h5>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6 col-md-2"><input type="number" class="form-control" id="in-year" placeholder="연도 *"></div>
+                        <div class="col-6 col-md-2"><input type="number" class="form-control" id="in-month" placeholder="월 *"></div>
+                        <div class="col-6 col-md-2"><input type="number" step="0.1" class="form-control" id="in-avg" placeholder="평균기온 *"></div>
+                        <div class="col-6 col-md-2"><input type="number" step="0.1" class="form-control" id="in-max" placeholder="최고기온"></div>
+                        <div class="col-6 col-md-2"><input type="number" step="0.1" class="form-control" id="in-min" placeholder="최저기온"></div>
+                        <div class="col-6 col-md-2"><input type="number" step="0.1" class="form-control" id="in-rain" placeholder="강수량"></div>
+                    </div>
+                    <button class="btn btn-sm btn-primary" onclick="addWeather()">
+                        <i class="fas fa-plus"></i> 데이터 추가
+                    </button>
+                    <div id="data-msg" class="small mt-2"></div>
+                    <div class="table-responsive mt-3" style="max-height: 360px; overflow-y: auto;">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead>
+                                <tr><th>연-월</th><th>평균</th><th>최고</th><th>최저</th><th>강수량</th><th></th></tr>
+                            </thead>
+                            <tbody id="data-table">
+                                <tr><td colspan="6" class="text-center text-muted">불러오는 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- 커스텀 JS -->
-    <script src="js/app.js"></script>
+     <script src="static/js/app.js"></script>
 </body>
 </html>

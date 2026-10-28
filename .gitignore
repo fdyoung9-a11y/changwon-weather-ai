@@ -13,3 +13,7 @@ __pycache__/
 
 # VS Code
 .vscode/
+
+
+# Flutter (별도 프로젝트)
+flutter/

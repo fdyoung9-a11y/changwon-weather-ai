@@ -36,6 +36,59 @@ def get_all_weather():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ──────────────────────────────────────
+# 📊 GET - 데이터 요약 (AI 챗봇에 넣을 정보)
+# ──────────────────────────────────────
+@router.get("/summary")
+def get_weather_summary():
+    try:
+        db = firestore.client()
+        docs = db.collection("monthly_weather").stream()
+        result = [doc.to_dict() for doc in docs]
+
+        # 데이터가 하나도 없으면 안내
+        if not result:
+            raise HTTPException(status_code=404, detail="요약할 데이터가 없습니다")
+
+        # 오래된 순서로 정렬 (연도 → 월)
+        result.sort(key=lambda d: (d["year"], d["month"]))
+        first = result[0]
+        last = result[-1]
+
+        # 값만 뽑아서 리스트로 만들기 (비어 있는 값은 제외)
+        avg_temps = [d["avg_temp"] for d in result]
+        max_temps = [d["max_temp"] for d in result if d.get("max_temp") is not None]
+        min_temps = [d["min_temp"] for d in result if d.get("min_temp") is not None]
+
+        # 추세: 처음 12개월과 최근 12개월의 평균기온 비교
+        # (계절 영향을 없애려고 1년 단위로 비교해요)
+        if len(avg_temps) >= 24:
+            early = sum(avg_temps[:12]) / 12
+            recent = sum(avg_temps[-12:]) / 12
+            diff = round(recent - early, 2)
+            if diff > 0.3:
+                trend = f"상승 (최근 1년 평균이 처음 1년보다 {diff}℃ 높음)"
+            elif diff < -0.3:
+                trend = f"하락 (최근 1년 평균이 처음 1년보다 {abs(diff)}℃ 낮음)"
+            else:
+                trend = "큰 변화 없음"
+        else:
+            trend = "추세를 계산하려면 24개월 이상의 데이터가 필요합니다"
+
+        return {
+            "period": f"{first['year']}-{first['month']:02d} ~ {last['year']}-{last['month']:02d}",
+            "count": len(result),
+            "metrics": {
+                "average_temp": round(sum(avg_temps) / len(avg_temps), 1),
+                "highest_temp": max(max_temps) if max_temps else None,
+                "lowest_temp": min(min_temps) if min_temps else None,
+            },
+            "trend": trend,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ─────────────────────────────────────────
 # 📖 GET - 특정 연도 조회

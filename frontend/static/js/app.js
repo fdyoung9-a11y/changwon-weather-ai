@@ -1,7 +1,11 @@
 // =====================
 // 설정
 // =====================
-const API_BASE = 'http://localhost:8000';
+// 내 컴퓨터에서 열면 로컬 서버, 인터넷(배포)에서 열면 Render 서버를 사용
+const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_BASE = isLocal
+    ? 'http://localhost:8000'
+    : 'https://changwon-weather-ai.onrender.com';
 let currentSessionId = null;   // 지금 대화방 이름표 (없으면 새 대화)
 let allConversations = [];     // 서버에서 불러온 대화 기록 전체
 

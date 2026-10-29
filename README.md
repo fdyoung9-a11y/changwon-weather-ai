@@ -42,7 +42,7 @@ AI가 Firestore에 저장된 **322개월(2000-01 ~ 2026-10) 기온 데이터**�
 ```text
 changwon-weather-ai/
 ├── backend/
-│   ├── main.py              # 서버 시작, CORS·Firebase 설정, /health
+│   ├── main.py              # 서버 시작, CORS·Firebase 설정, /health, 라우터 연결(/api/data 포함)
 │   ├── requirements.txt     # 필요한 라이브러리 목록
 │   └── routes/
 │       ├── weather.py       # 월별 기온 CRUD, 데이터 요약
@@ -54,7 +54,10 @@ changwon-weather-ai/
 │       ├── css/style.css
 │       └── js/app.js
 ├── scripts/                 # 데이터 전처리, Firestore 업로드
-└── data/                    # 창원 월별 기온 CSV
+├── data/                    # 창원 월별 기온 CSV
+├── docs/
+│   └── screenshots/         # 실행 증거 캡처 (README 하단 "실행 증거" 섹션)
+└── README.md
 ```
 
 ## 🔌 주요 API

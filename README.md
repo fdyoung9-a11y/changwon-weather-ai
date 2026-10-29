@@ -201,3 +201,83 @@ https://changwon-weather-ai-frontend.vercel.app,http://localhost:5500,http://127
 | 대화 시간이 9시간 늦게 표시 | 배포 서버가 UTC 기준 시간 사용 | 저장 시 한국 시간(KST)으로 기록 |
 | AI가 특정 연도·월 질문에 답하지 못함 | AI에게 요약 정보만 전달 | 322개월 월별 데이터를 함께 전달 |
 | 요약 API 경로가 PRD와 다름 | 기존 경로 `/summary` 사용 | `/api/data` 경로를 추가로 연결 |
+
+## 🧪 실행 증거 (배포 환경에서 직접 확인한 결과)
+
+아래는 모두 2026-10-29 배포된 서비스에 실제로 접속해 확인한 화면입니다.
+
+### 1. 배포 접속 확인
+
+**프론트엔드** (https://changwon-weather-ai-frontend.vercel.app)
+
+![프론트엔드 첫 화면](docs/screenshots/01-frontend.png)
+
+**백엔드 서버 상태** (`GET https://changwon-weather-ai.onrender.com/health`)
+
+```json
+{"status":"ok"}
+```
+
+![health 응답](docs/screenshots/02-health.png)
+
+### 2. API 문서 (Swagger UI)
+
+`https://changwon-weather-ai.onrender.com/docs` 접속 화면입니다. 데이터 조회·추가·수정·삭제, AI 채팅, 대화 저장·조회 API가 목록으로 확인됩니다.
+
+![Swagger UI](docs/screenshots/03-docs.png)
+
+### 3. 데이터 추가 → Firestore 반영 → 삭제
+
+테스트용으로 2026년 11월 데이터를 추가한 뒤, 다시 삭제해 원래 상태로 되돌렸습니다.
+
+| 단계 | 확인 내용 |
+|---|---|
+| 추가 | 데이터 관리 표 맨 위에 `2026-11` 행이 생김 |
+| 반영 | 요약 카드가 322개월 → **323개월**, 기간이 `~ 2026-11`로 바뀜 |
+| 삭제 | "2026년 11월 데이터를 삭제했어요." 메시지, 표 맨 위가 `2026-10`으로 돌아옴 |
+| 복구 | 요약 카드가 다시 **322개월**, `~ 2026-10`으로 돌아옴 |
+
+![데이터 추가 후 목록](docs/screenshots/04-data-add.png)
+![추가 후 요약 323개월](docs/screenshots/05-data-summary.png)
+![데이터 삭제](docs/screenshots/06-data-delete.png)
+![삭제 후 요약 322개월](docs/screenshots/07-summary-restored.png)
+
+### 4. AI 채팅
+
+질문: "2023년 8월 평균기온은 몇 도였어?"
+답변: 2023년 8월 창원 평균기온 27.7℃, 최고 35.8℃, 최저 22.2℃
+
+![AI 채팅](docs/screenshots/08-chat.png)
+
+### 5. 대화 저장 및 불러오기
+
+**저장된 대화 조회** (`GET https://changwon-weather-ai.onrender.com/conversations/`) 응답 일부:
+
+```json
+{
+  "count": 10,
+  "data": [
+    {
+      "session_id": "a9e0e874-97ee-4daa-843e-12ebbfe5466a",
+      "user_message": "2023년 8월 평균기온은 몇 도였어?",
+      "bot_response": "2023년 8월의 창원 평균기온은 **27.7℃**였습니다. 당시 최고기온은 35.8℃, 최저기온은 22.2℃를 기록했습니다.",
+      "created_at": "2026-10-29T13:55:49.493565+09:00",
+      "id": "jrctnprSmkJNEzVmSPqs"
+    }
+  ]
+}
+```
+
+채팅으로 보낸 질문이 Firestore `conversations` 컬렉션에 저장되고, 위 API로 다시 조회되는 것을 확인했습니다.
+
+![conversations 응답](docs/screenshots/09-conversations.png)
+
+**화면에서 불러오기**: "새 대화"로 채팅창을 비운 뒤 오른쪽 대화 기록을 클릭하면, 저장된 대화가 다시 나타납니다.
+
+![대화 기록 불러오기](docs/screenshots/10-history.png)
+
+### 6. 모바일 화면
+
+크롬 개발자 도구(iPhone 16 Pro Max)로 확인한 화면입니다. 요약 카드와 채팅창이 위아래로 쌓여 보이고, Network 탭에서 `summary`, `conversations/` 요청이 모두 200(성공)입니다.
+
+![모바일 화면](docs/screenshots/11-mobile.png)

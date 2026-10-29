@@ -45,3 +45,6 @@ def health():
 app.include_router(weather.router)
 app.include_router(chat.router)
 app.include_router(conversations.router, prefix="/conversations")
+
+# PRD 요구 경로(/api/data/...)로도 같은 날씨 API 제공
+app.include_router(weather.router, prefix="/api/data")

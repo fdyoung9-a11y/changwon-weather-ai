@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException
 from firebase_admin import firestore
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+# 한국 시간대(UTC보다 9시간 빠름)
+KST = timezone(timedelta(hours=9))
 
 router = APIRouter()
 
@@ -96,7 +99,7 @@ def create_conversation(data: ConversationCreate):
             "user_message": data.user_message,
             "bot_response": data.bot_response,
             "session_id": data.session_id,
-            "created_at": datetime.now().isoformat()  # 시간 자동 기록
+            "created_at": datetime.now(KST).isoformat()  # 시간 자동 기록
         }
 
         # Firestore 자동 ID로 저장
